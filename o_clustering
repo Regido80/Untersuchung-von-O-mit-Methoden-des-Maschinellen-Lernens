@@ -1,0 +1,1884 @@
+# **Erzeugen aller Origamis der Länge l \in \N**
+- mit Verwendung von Zykeltypen für die horizontale Verklebung
+- mit Aussortieren nichtzusammenhängender Origamis 
+
+import numpy as np
+
+Länge der betrachteten Origamis
+
+l = 6
+
+## Erzeuge alle Permutationen der Länge l, l/in /N
+
+from itertools import permutations
+
+SY = list(permutations(range(1, l+1)))
+
+print("SY =", SY)
+
+##Übersetzen von Standarddarstellung in Zykeldarstellung
+
+k = 0
+
+ZY = []
+
+for k in range(0, len(SY)):
+
+  ZYk = []
+
+  s = 0         #Zykellistennr.
+  i = 0         #Anz. erfasster Elemente von {1, ..., l}
+  j = 0         #Zykellisten Position
+
+
+  while i+1 < l+1:
+
+    S = set(range(1, l+1))
+
+    if s > 0:
+
+      for m in range(0, s):
+
+        S = S.difference(set(ZYk[m]))
+        m = m+1
+
+    r = min(S)
+
+    zy = []
+    zy.append(r)
+
+    a = zy[0]
+
+    while SY[k][a-1] != r:
+
+      zy.append(SY[k][a-1])
+      j = j+1
+      a = zy[j]
+
+    ZYk.append(zy)
+  
+    s = s+1
+    i = i+j+1
+    j = 0   
+
+  ZY.append(ZYk)
+
+  k = k+1
+
+print("\nZY =", ZY)
+
+##Erzeuge alle Zykeltypen der Länge l, l \in \N
+
+from copy import deepcopy
+ 
+# l:                  Länge des Zykeltyps (l /in /N)
+# m:                  Anzahl der Zykel    (m = 1,...,l)
+# r:                  Listeneintragsnr. der Liste der Zykellängen eines Zykeltyps der Länge l mit m Zykeln (r = 1,...,P(l,m))
+# L[m-1]:             Liste der Zykellängen der Zykeltypen der Länge l mit m Zykeln
+# L[m-1][r-1]:        Liste der Zykellängen des r-ten (eines) Zykeltyps der Länge l mit m Zykeln
+# L[m-1][r-1][i]:     Länge des i-ten Zykels
+
+###Abbruchkriterium
+
+#t:                   Laufnr. (t = 1,...,m-1)
+ 
+def abbkrit(t):                           #t = m - i
+
+  Lsum = 0                     
+ 
+  if m-t-1 > 0:
+    for i in range(0, (m-t-1)):
+      Lsum = Lsum + L[m-1][r-1][i]        #Lsum = L[0]+ ... + L[m-2-t]
+ 
+  a = 0
+ 
+  if (l - Lsum) % (t+1) < 1:              #Rest bei Division      (t+1 = m-(m-t-1))
+    a = (l - Lsum) // (t+1)               #Ganzzahlige Division   (t+1 = m-(m-t-1))
+    R = 0
+  else:
+    a = (l - Lsum) // (t+1)               #Ganzzahlige Division   (t+1 = m-(m-t-1))
+    a = a+1
+    R = (a * (t+1)) - (l-Lsum)
+ 
+  A = []
+ 
+  for s in range(0, t+1):                 #range((m-1-t), m-1+1):               Die Funktion range(0, n) zählt von 0 bis n-1!!!!!!!!!!!!!
+    if s <= R-1:                          #Python zählt beginnend mit der Null!
+      A.append(a-1)                       #A[s] = a-1
+      s += 1
+    else:
+      A.append(a)                         #A[s] = a
+      s += 1 
+
+  Ltest = []
+  
+  for s in range((m-1-t), m-1+1):         #range(0, t+1):
+    Ltest.append(L[m-1][r-1][s])                                                #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  if Ltest == A:                                                               
+    return True
+  else:
+    return False  
+
+###Progression
+
+def progr(t):                                                                   #t = 1,...,n-1  , Laufnr.
+  L[m-1][r-1][m-1-t] += 1
+
+  if t > 1:
+    for s in range(1, t):
+      L[m-1][r-1][m-1-t+s] = L[m-1][r-1][m-1-t]
+      
+  L[m-1][r-1][m-1] = l - sum(L[m-1][r-1], -L[m-1][r-1][m-1])                    #sum(L[m-1][r-1], -L[m-1][r-1][m-1]) = L[m-1][r-1][0]+L[m-1][r-1][1]+...+L[m-1][r-1][m-2]
+
+###Erzeuge Zykel in standardisierter Darst nach vorgabe von L[l-1][m-1][r-1]
+
+#L[m-1][r-1] = [l_1, l_2, ...,l_m],          #l_i: Länge des i-ten Zykels
+ 
+ZX = []                                      #ZX: Liste der Zykeltypen in Standarddarstellung
+ 
+def zykel(l, m, r):
+  
+  ZX[m-1].append([])                         #ZX = [ [..] ,[..], ..., [..], [ [] ] ]
+  
+  s = 1
+
+  for i in range(0, m):
+    ZX[m-1][r-1].append([])
+    for j in range(0, L[m-1][r-1][i]):       #Die Funktion range(0, n) zählt von 0 bis n-1!!!!!!!!!!!!!          
+      ZX[m-1][r-1][i].append(s)
+      s = s+1      
+      j = j+1
+    j = 0
+    i = i+1  
+
+###Algorithmus
+
+ZX = []                                   #ZX: Liste der Zykeltypen in Standarddarstellung
+ 
+L = []                                    #Liste aller Zykeltypen der Länge l
+
+r = 1                                     #r: Laufnr., konkrete Realisierung eines Zykeltyps
+
+####Initialisierung m = 1
+
+m = 1                                     #Initialisierung m = 1
+                                          
+L.append([])                              #L = [[]]   :
+L[0].append([])                           #L = [[[]]] :
+L[0][0].append(l)                         #L = [[[l]]]: Untertliste der Zykellängen des Zykeltyps der Länge l mit m = 0+1 Zykeln
+ 
+ZX.append([])                             #m: ZX = [ [    ] ]
+ZX[0].append([])                          #r: ZX = [ [ [] ] ]
+s = 1
+ZX[0][0].append([])                       #einzelner Zykel des Zykeltyps l, m, r
+for j in range(0, L[m-1][r-1][0]):        #auffüllen der einzelnen Zykel des Zykeltyps l, m, r
+  ZX[0][0][0].append(s)
+  s += 1
+  j += 1
+
+r = 1
+
+####Initialisierung m = 2
+
+m = 2                                     #Initialisierung m = 2
+
+L.append([])                              #Initialisierung m = 2
+
+ZX.append([])                             #m: ZX = [ [ [1,2,3,4,5] ], [  ] ]
+
+for u in range(0, (l // 2)):
+  L[1].append([])  
+  L[1][u].append(u+1)                                                           
+  R = l - sum(L[m-1][u])                  #sum(L[m-1][0] = m-2)
+  L[1][u].append(R)
+
+  ZX[m-1].append([])                      #m: ZX = [ [ [1,2,3,4,5] ], [[]] ]
+
+  r = u+1
+
+  s = 1
+  for i in range(0, m):
+    ZX[m-1][r-1].append([])
+    for j in range(0, L[m-1][r-1][i]):
+      ZX[m-1][r-1][i].append(s)
+      s += 1
+      j += 1
+    j = 0
+    i += 1
+
+r = 1
+
+####Algorithmus m <= l-2
+
+m = 3
+
+while m <= l-2:                           #Initialisierung m >= 3
+
+  r = 1
+
+#####Initialisieren von L[m-1][0]
+
+  L.append([])
+
+  L[m-1].append([])                       #Initialisierung m >= 3
+
+  for s in range(1, m):
+    L[m-1][0].append(1)                                                         #append([1])!!!!!!!!!!!!!!!!!!!!!!!!!!
+    s = s+1
+
+  R = l - sum(L[m-1][0])                  #sum(L[m-1][0] = m-2)
+  L[m-1][0].append(R)                                                           #append([R])!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  ZX.append([])                           #ZX = [ [..] ,[..], ..., [..], [    ] ]
+   
+  zykel(l, m, r)
+
+#####Algorithmus
+
+  t = 1                                   #t: Laufnummer, Stufe des Abbruchkriteriums
+
+  while t <= m-1:
+
+    if abbkrit(t) == False:
+
+      Lzs = deepcopy(L[m-1][r-1])
+      L[m-1].append(Lzs)    
+
+      r = r+1
+
+      progr(t)
+   
+      zykel(l, m, r)
+
+    else:
+
+      t = t+1
+
+  m = m+1
+
+r = 1
+
+####Initialisierung m = l-1
+
+m = l-1                                   #Initialisierung m = l-1
+
+L.append([])                              #Initialisierung m = l-1
+L[m-1].append([])
+for s in range(0, l-1-1):
+    L[m-1][0].append(1)
+R = l - sum(L[m-1][0])                    #sum(L[m-1][0] = m-2)
+L[m-1][0].append(R)
+
+ZX.append([])                             #ZX = [ [..] ,[..], ..., [..], [    ] ]
+
+zykel(l, m, r)
+
+r = 1
+
+####Initialisierung m = l
+
+m = l                                     #Initialisierung m = l
+                                         
+L.append([])                              #L = [ [[5]], ..., [] ]   :
+L[m-1].append([])                         #L = [ [[5]], ..., [[]] ] :
+for s in range(0, l):
+    L[m-1][0].append(1)
+
+ZX.append([])                             #ZX = [ [..] ,[..], ..., [..], [    ] ]                  
+ 
+zykel(l, m, r)
+
+#print("\nZX =", ZX)                      #Darstellung als Liste von Listen (m) von Listen (r)
+
+###Reduzieren der Liste ZX (flatten list)
+
+zx = []
+
+for M in range(0, l):
+
+  for R in range(0, len(ZX[M])):
+    zx.append(ZX[M][R])
+
+ZX = []
+
+ZX = deepcopy(zx)
+
+print("\nZX =", ZX)
+
+##Übersetzen von Zykel in Standarddarstellung
+
+SX = []
+
+for i in range(0, len(ZX)):
+
+  SX.append([])
+  
+  j = 0                                         #j:  Laufnr., Zykellistennr.
+  k = 0                                         #k:  Laufnr., Position in Zykelliste
+  
+  for n in range(0, l):
+  
+    if k == len(ZX[i][j])-1:                    #n:  Länge von SX[i][j]
+      SX[i].append(ZX[i][j][0])                 #Letzter Eintrag des Zykels wird auf ersten Eintrag des Zykels geschickt
+
+      j = j+1
+      k = 0
+      n = n+1
+    else:
+      SX[i].append(ZX[i][j][k+1])               #i-ter Eintrag des Zykels wird auf (i+1)-ten Eintrag des Zykels abgebildet
+
+      k = k+1
+      n = n+1
+
+print("\nSX =", SX)
+
+##Erzeuge alle Origamis der Länge l, l /in /N
+
+O = []
+
+O_j = []
+
+j = 0
+s = 0
+t = 0
+
+for s in range(0, len(ZX)):
+  for t in range(0, len(ZY)):
+    O_j.append(ZX[s])
+    O_j.append(SX[s])
+    O_j.append(ZY[t])
+    O_j.append(SY[t])
+    O.append(O_j)
+
+    O_j = []
+    j = j+1
+    t = t+1
+  t = 0
+  s = s+1
+
+print("\nO =", O)
+
+print("\nlen(O) =", len(O))
+
+print("\nZX =", ZX)
+print("\nSX =", SX)
+print("\nlen(SX) =", len(SX))
+print("\nZY =", ZY)
+print("\nSY =", SY)
+print("\nlen(SY) =", len(SY))
+
+##Informationen über die Liste O der Origamis
+
+print("Informationen über die Liste O der Origamis der Länge l /in /N")
+
+print("\nl =", l)
+
+print("\nO = ", O)  
+ 
+M = len(O)
+ 
+print("\nM = len(O) =", M)
+ 
+m = 30
+
+print("\nBeispiel:")
+ 
+print("\nm = ", m)
+ 
+print("\nO[", m, "] = ", O[m])
+ 
+print("\nO[m][0]: Horiz Verkl, Zykeldarst:     \t      O[", m, "][0] =",      O[m][0])
+ 
+print("\nO[m][1]: Horiz Verkl, Standarddarst:  \t      O[", m, "][1] =",      O[m][1])
+ 
+print("\nO[m][2]: Vertik Verkl, Zykeldarst:    \t      O[", m, "][2] =",      O[m][2])
+ 
+print("\nO[m][3]: Vertik Verkl, Standarddarst: \t      O[", m, "][3] =",      O[m][3])
+
+print("\nHoriz. Verkl., Zykeldarst")
+ 
+print("\nO[", m, "]             = ", O[m],            "\t\t",                    " : Darst des m-ten O in der Liste")
+print("\nO[", m, "][0]          = ", O[m][0],         "\t\t\t\t\t\t\t\t\t",      " : Horiz Verkl, Zykeldarst")
+print("\nO[", m, "][0][0]       = ", O[m][0][0],      "\t\t\t\t\t\t\t\t\t\t",    " : Darst einzelner Zykel, betrachteter Block")
+print("\nO[", m, "][0][0][0][0] = ", O[m][0][0][0],   "\t\t\t\t\t\t\t\t\t\t\t",  " : Einzelner Blockeintrag")
+ 
+print("\nsm = len(O[m][0]): Anzahl der horiz Blöcke (anz der Zykel der Zykeldarst der horiz Verkl)")
+sm = len(O[m][0])
+print("\n  s", m, " = len(O[", m, "][0]) =", sm)
+ 
+print("\nVertik. Verkl., Zykeldarst")
+
+print("\nO[", m, "]             = ", O[m],            "\t\t",                    " : Darst des m-ten O in der Liste")
+print("\nO[", m, "][2]          = ", O[m][2],         "\t\t\t\t\t\t\t\t\t",      " : Vertik Verkl, Zykeldarst")
+print("\nO[", m, "][2][0]       = ", O[m][2][0],      "\t\t\t\t\t\t\t\t\t\t",    " : Darst einzelner Zykel, betrachteter Block")
+print("\nO[", m, "][2][0][0][0] = ", O[m][2][0][0],   "\t\t\t\t\t\t\t\t\t\t\t",  " : Einzelner Blockeintrag")
+
+print("\ntm = len(O[m][2]): Anzahl der vertik Blöcke (anz der Zykel der Zykeldarst der vertik Verkl)")
+tm = len(O[m][2])
+print("\n  t", m, " = len(O[", m, "][2]) =", tm)
+ 
+
+m = 0
+
+##Aussortieren nichtzusammenhängender Origamis
+
+Überprüfen ob die horizontalen Blöcke vertikal nur mit sich selbst verknüpft sind
+
+###Test-Funktion
+
+def vertik_verkl_test(K):
+
+  global m
+  global p
+
+####Erzeuge Liste deren Einträge genau die Länge der betrachteten horiz Blöcke sind
+
+  j = []                                    #j[]:     Liste, speichert Länge der betrachteten Blöcke/Zykel
+
+  for l in range(0, sm-1):                  #sm:      Anzahl der horiz Blöcke (anz der Zykel der Zykeldarst der horiz Verkl)
+    if K[l] == 0:                           #l:       Nr.des betrachteten Zykels
+      break                                 #K[l]:    Liste, speichert betrachteten horitz Block              
+    y = len(O[m][0] [ K[l] - 1 ] )
+    j.append(y)
+
+#  print("j =", j)
+
+####Erzeuge Menge (menge) deren Elemente die Nummern der EHQ der betrachteten horiz Blöcke sind            
+          
+  menge = set()                             #menge:   Menge der EHQ Nummern in horiz Block
+
+  for l in range(0, sm-1):
+    if K[l] == 0:
+      break
+    menge_l = set(O[m][0] [ K[l] - 1 ] )
+    menge = menge.union(menge_l)
+ 
+#  print("menge =", menge)
+
+####Erzeuge Menge (vertik_menge) deren Elemente die Nummern derjenigen EHQ sind mit denen die EHQ der betrachteten horiz Blöcke nach oben verklebt sind
+ 
+  vertik_menge = set()                      #vertik_menge:  Menge der oberen (vertik) Nachbarn der EHQ des betrachteten horiz Blocks
+
+  for l in range(0, sm-1):
+    if K[l] == 0:
+      break    
+    for n in range(0, j[l]):                #n:       EHQ-Nr.des betrachteten horiz Blocks
+      vertik_menge.add(  O[m][3]  [    O[m][0]  [ K[l] - 1 ]  [n]  - 1    ]   ) #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+#  print("vertik_menge =", vertik_menge)
+ 
+####Falls die betrachteten Blöcke vertikal nur mit sich selbst verklebt sind lösche das zugehörige O 
+ 
+  if menge == vertik_menge:
+    p = True
+  else:
+    p = False
+
+  return p
+
+###Algorithmus
+
+import itertools
+
+from itertools import combinations
+
+M = len(O)
+ 
+m = 0
+
+while m < M:
+
+  sm = len(O[m][0])                                 #sm:    Anzahl der Zykel in der horizontalen Verklebestruktur
+  if sm == 1:
+    m = m+1
+  else:
+
+    S = []
+    for s in range(1, sm+1):
+      S.append(s)                                   #S = [1, 2, ..., sm]
+
+    T = []                                          #T:    Liste aller Kombinationen von l Elementen der Menge S
+    for l in range(1, sm):
+      for t in combinations(S, l):
+        T.append(t)
+
+    K = []                                          #K:     Blockliste, speichert betrachtete horiz. Zykel/Blöcke
+    for k in range(0, sm):
+      K.append(0)
+      k = k+1
+
+    p = False
+
+    for j in range(0, len(T)):
+
+      for i in range(0,len(T[j])):
+        K[i] = T[j][i]
+        vertik_verkl_test(K)
+
+        if p == True:
+          O.remove(O[m])
+          break
+
+      if p == True:
+        break
+
+    if p == True:
+      M = len(O)
+    else:
+      m = m+1
+      M = len(O)
+
+print("\nlen(O) =", len(O))
+print("\nO =", O)
+print("\nO[0] =", O[0]) 
+
+# **Erzeugen eines Pixelmuster für jedes Origami der Länge l /in /N**
+
+Zur Übergabe an die Clusteringmethode
+
+l = 6
+
+print("l =", l)
+
+
+P = []
+
+for i in range(0, len(O)):
+
+  P_i = []
+  P.append(P_i)                             #Initialisierung der Pixelmatrix
+
+  for u in range(0, l+1):                   #Breite der Pixelmatrix
+
+    P_iu = []
+    P[i].append(P_iu)
+
+    for v in range(0, 2*l):                 #Höhe der Pixelmatrix
+
+      P_iuv = 0
+      P[i][u].append(P_iuv)
+
+    v = 0
+
+#  print("\nP[", i, "] = ", P[i])
+
+#  print("\nP[i] =")
+#  for u in range(0, l-1+1):
+#    print(P[i][u])
+
+
+#  print("\nO[", i, "] = ", O[i])
+
+
+
+#  print("\nHorizontale Verklebung")
+
+
+#  print("\nStandarddarstellung, erste Zeile, bis Mitte,")
+
+  for j in range(0, l):                   #Standarddarstellung, horizontale Verkl.
+    P[i][0][l-1-j] = O[i][1][j]
+
+#  print("\nO[", i, "][1] = ", O[i][1])  
+#  print("\nP[", i, "][", 0, "] = ", P[i][0])
+
+
+#  print("\nZykeldarstellung, beginnend Mitte, zweite Zeile von unten, von rechts nach links, von unten nach oben")
+
+#  print("\nO[", i, "][0] =", O[i][0])
+
+  for s in range(0, len(O[i][0])):
+    for t in range(0, len(O[i][0][s])):
+      P[i][s+1][l-1-t] = O[i][0][s][t]
+#      print("\nP[", i, "][", s+1, "][", l-1-t, "] = ", P[i][s+1][l-1-t])
+
+    t = 0
+
+#  print("\n\nP[", i, "] = ", P[i])
+
+#  print("\nP[i] =")
+#  for u in range(0, l-1+1):
+#    print(P[i][u])
+
+
+
+#  print("\n\nVertikale Verklebung")
+
+
+#  print("\nStandarddarstellung, erste Zeile, ab Mitte,")
+
+  for j in range(0, l):                   #Standarddarstellung, horizontale Verkl.
+    P[i][0][l+j] = O[i][3][j]
+
+#  print("\nO[i][3] = ", O[i][3])  
+#  print("\nP[", i, "][", 0, "] = ", P[i][0])
+
+
+#  print("\nZykeldarstellung, beginnend Mitte, zweite Zeile von unten, von rechts nach links, von unten nach oben")
+
+#  print("\nO[", i, "][2] =", O[i][2])
+
+#  print("\nlen(O[i][2] =", len(O[i][2]))
+
+  for s in range(0, len(O[i][2])):
+    
+#    print("\nlen(O[i][2][", s, "] =", len(O[i][2][s]))
+
+    for t in range(0, len(O[i][2][s])):
+      P[i][s+1][l+t] = O[i][2][s][t]
+#      print("\nP[", i, "][", s+1, "][", l-1+t, "] = ", P[i][s+1][l-1+t])
+
+    t = 0
+
+#  print("\n\nP[", i, "] = ", P[i])
+
+#  print("\nP[i] =")
+#  for u in range(0, l-1+1):
+#    print(P[i][u])
+
+
+
+#  print("\nO[", i, "] = ", O[i])
+
+#  print("\n")
+
+#  for w in range(0, l):
+#    print("P[", i, "][", w, "] = ", P[i][l-1-w]) 
+
+
+
+print("\nP[0] =")
+for u in range(0, l-1+1):
+  print(P[0][u])
+
+print("\nlen(P) = ", len(P))
+
+#print("P =", P)
+
+##Visualisierung der Origamis als Pixelmatrix
+
+import numpy as np
+
+# use Matplotlib
+import matplotlib.pyplot as plt
+
+# Normalize all values between 0 and 1 and flatten input Data
+
+print("P = ", P)
+
+arrayP = np.array(P)
+
+arrayP = arrayP.astype('float32') / l
+
+arrayP = arrayP.reshape((len(arrayP), np.prod(arrayP.shape[1:])))
+
+print("\narrayP = \n\n", arrayP, "\n")
+
+# visualize inputs
+
+n = 10  # how many digits we will display
+plt.figure(figsize=(20, 4))
+for i in range(n):
+    
+    ax = plt.subplot(2, n, i + 1)
+    plt.imshow(arrayP[i].reshape(l+1, 2*l))
+    plt.gray()
+    ax.get_xaxis().set_visible(False)
+    ax.get_yaxis().set_visible(False)
+
+plt.show()
+
+# **Anwenden von Clusteringmethoden auf die Liste O aller Origamis der Länge l/in /N**
+
+## **Anwenden von DBSCAN-Clustering auf die Pixeldarstellung P von O**
+
+https://scikit-learn.org/stable/modules/generated/sklearn.cluster.DBSCAN.html#examples-using-sklearn-cluster-dbscan
+
+https://scikit-learn.org/stable/auto_examples/cluster/plot_dbscan.html
+
+https://medium.com/@elutins/dbscan-what-is-it-when-to-use-it-how-to-use-it-8bd506293818
+
+import numpy as np
+
+from sklearn.cluster import DBSCAN
+from sklearn.preprocessing import StandardScaler
+from sklearn import metrics
+
+### Preprocessing Data
+
+arrayP = np.array(P)
+arrayP = arrayP.astype('float32') / l
+p = arrayP.reshape(len(arrayP),-1)
+
+scaler = StandardScaler()
+P_scaled = scaler.fit_transform(p)
+
+X = P_scaled
+
+### Compute DBSCAN
+
+db = DBSCAN(eps=3, min_samples=3).fit(X)
+core_samples_mask = np.zeros_like(db.labels_, dtype=bool)
+core_samples_mask[db.core_sample_indices_] = True
+labels = db.labels_
+
+# Number of clusters in labels, ignoring noise if present.
+n_clusters_ = len(set(labels)) - (1 if -1 in labels else 0)
+n_noise_ = list(labels).count(-1)
+
+print('Estimated number of clusters: %d' % n_clusters_)
+print('\nEstimated number of noise points: %d' % n_noise_)
+
+#identifying the core samples
+core_samples = np.zeros_like(labels, dtype = bool)
+
+core_samples[db.core_sample_indices_] = True
+print("\ncore_samples = ", core_samples)
+
+#Computing the Silhouette Score
+
+print("\nSilhouette Coefficient: %0.3f" % metrics.silhouette_score(X, labels))
+
+### Plot result
+
+https://scikit-learn.org/stable/auto_examples/cluster/plot_dbscan.html
+
+https://en.wikipedia.org/wiki/Cluster_analysis
+
+import matplotlib.pyplot as plt
+
+# Black removed and is used for noise instead.
+unique_labels = set(labels)
+colors = [plt.cm.Spectral(each)
+          for each in np.linspace(0, 1, len(unique_labels))]
+for k, col in zip(unique_labels, colors):
+    if k == -1:
+        # Black used for noise.
+        col = [0, 0, 0, 1]
+
+    class_member_mask = (labels == k)
+
+    xy = X[class_member_mask & core_samples_mask]
+    plt.plot(xy[:, 0], xy[:, 1], 'o', markerfacecolor=tuple(col),
+             markeredgecolor='k', markersize=14)
+
+    xy = X[class_member_mask & ~core_samples_mask]
+    plt.plot(xy[:, 0], xy[:, 1], 'o', markerfacecolor=tuple(col),
+             markeredgecolor='k', markersize=6)
+
+plt.title('Estimated number of clusters: %d' % n_clusters_)
+plt.show()
+
+## **Anwenden von Agglomerative-Clustering auf die Pixeldarstellung P von O**
+
+https://scikit-learn.org/stable/modules/generated/sklearn.cluster.AgglomerativeClustering.html
+
+import numpy as np
+
+from sklearn.cluster import AgglomerativeClustering
+from sklearn.preprocessing import StandardScaler
+from sklearn import metrics
+
+### Preprocessing Data
+
+arrayP = np.array(P)
+arrayP = arrayP.astype('float32') / l
+p = arrayP.reshape(len(arrayP),-1)
+
+scaler = StandardScaler()
+P_scaled = scaler.fit_transform(p)
+
+X = P_scaled
+
+### Optimizing and Evaluating the Clustering Algorithm
+
+clustering = AgglomerativeClustering().fit(X)
+clustering
+
+clustering.labels_
+
+### Plot results
+
+https://scikit-learn.org/stable/auto_examples/cluster/plot_agglomerative_dendrogram.html
+
+import numpy as np
+
+from matplotlib import pyplot as plt
+from scipy.cluster.hierarchy import dendrogram
+
+
+def plot_dendrogram(model, **kwargs):
+    # Create linkage matrix and then plot the dendrogram
+
+    # create the counts of samples under each node
+    counts = np.zeros(model.children_.shape[0])
+    n_samples = len(model.labels_)
+    for i, merge in enumerate(model.children_):
+        current_count = 0
+        for child_idx in merge:
+            if child_idx < n_samples:
+                current_count += 1  # leaf node
+            else:
+                current_count += counts[child_idx - n_samples]
+        counts[i] = current_count
+
+    linkage_matrix = np.column_stack([model.children_, model.distances_,
+                                      counts]).astype(float)
+
+    # Plot the corresponding dendrogram
+    dendrogram(linkage_matrix, **kwargs)
+
+
+# setting distance_threshold=0 ensures we compute the full tree.
+model = AgglomerativeClustering(distance_threshold=0, n_clusters=None)
+
+model = model.fit(X)
+plt.title('Hierarchical Clustering Dendrogram')
+# plot the top three levels of the dendrogram
+plot_dendrogram(model, truncate_mode='level', p=3)
+plt.xlabel("Number of points in node (or index of point if no parenthesis).")
+plt.show()
+
+# **Anwenden von Clusteringmethoden auf die Liste O aller Origamis der Länge l/in /N unter Verwenung eines Autoencoders auf die Pixeldarstellung P der O**
+
+https://blog.keras.io/building-autoencoders-in-keras.html
+
+### **Single fully-connected neural layer as autoencoder**
+
+####**Autoencoder**
+
+from keras.layers import Input, Dense
+from keras.models import Model
+
+import numpy as np
+
+##### Decoder and Encoder
+
+# this is the size of our encoded representations
+encoding_dim = 16  # 16 floats -> compression of factor 5.25, assuming the input is 84 floats         !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+
+# this is our input placeholder
+input_img = Input(shape=((l+1)*(2*l),))                                         #!!!!!!!!!!!!!!!!!!!!
+
+print("input_img shape =", input_img.shape)
+
+
+# "encoded" is the encoded representation of the input
+encoded = Dense(encoding_dim, activation='relu')(input_img)
+
+print("encoded shape =", encoded.shape)
+
+# "decoded" is the lossy reconstruction of the input
+decoded = Dense((l+1)*(2*l), activation='sigmoid')(encoded)                     #!!!!!!!!!!!!!!!!!!!!
+
+print("decoded shape =", decoded.shape)
+
+
+# this model maps an input to its reconstruction
+autoencoder = Model(input_img, decoded)
+
+
+###Create a separate encoder model:
+
+# this model maps an input to its encoded representation
+encoder = Model(input_img, encoded)
+
+
+###Create a seperate decoder model:
+
+# create a placeholder for an encoded (8-dimensional) input
+encoded_input = Input(shape=(encoding_dim,))
+# retrieve the last layer of the autoencoder model
+decoder_layer = autoencoder.layers[-1]
+# create the decoder model
+decoder = Model(encoded_input, decoder_layer(encoded_input))
+
+##### Train our autoencoder to reconstruct Input:
+
+##1. Configure our model to use a per-pixel binary crossentropy loss, and the Adadelta optimizer:
+
+autoencoder.compile(optimizer='adam', loss='binary_crossentropy')               #!!!!!!!!!!!!!!!!!!!!
+
+##2. Normalize all values between 0 and 1 and flatten input Data
+
+print("P = ", P)
+
+arrayP = np.array(P)
+
+arrayP = arrayP.astype('float32') / l
+
+arrayP = arrayP.reshape((len(arrayP), np.prod(arrayP.shape[1:])))
+
+print("\narrayP = \n\n", arrayP)
+
+##3. Train autoencoder for 100 epochs:                                          #100 epochs:
+
+autoencoder.fit(arrayP, arrayP,
+                epochs=100,                                                      
+                batch_size=256,
+                shuffle=True,
+                validation_data=(arrayP, arrayP))
+
+##### Visualize the reconstructed inputs and the encoded representations with Matplotlib:
+
+# encode and decode some digits
+encoded_imgs = encoder.predict(arrayP)
+decoded_imgs = decoder.predict(encoded_imgs)
+
+#print("\nencoded_imgs = ", encoded_imgs)
+#print("\ntype(encoded_imgs) = ", type(encoded_imgs))
+#print("\nencoded_imgs.size = ", encoded_imgs.size)
+#print("\nencoded_imgs[0] = ", encoded_imgs[0])
+
+# use Matplotlib
+import matplotlib.pyplot as plt
+
+n = 10  # how many digits we will display
+plt.figure(figsize=(20, 4))
+for i in range(n):
+    # display original
+    ax = plt.subplot(2, n, i + 1)
+    plt.imshow(arrayP[i].reshape(l+1, 2*l))
+    plt.gray()
+    ax.get_xaxis().set_visible(False)
+    ax.get_yaxis().set_visible(False)
+
+    # display reconstruction
+    ax = plt.subplot(2, n, i + 1 + n)
+    plt.imshow(decoded_imgs[i].reshape(l+1, 2*l))
+    plt.gray()
+    ax.get_xaxis().set_visible(False)
+    ax.get_yaxis().set_visible(False)
+plt.show()
+
+#### **Anwenden von DBSCAN-Clustering auf die encodierten Daten**
+
+import numpy as np
+
+from sklearn.cluster import DBSCAN
+from sklearn.preprocessing import StandardScaler
+from sklearn import metrics
+
+##### Preprocessing Data
+
+enc_imgs = encoded_imgs.reshape(len(encoded_imgs),-1)
+
+scaler = StandardScaler()
+enc_imgs = scaler.fit_transform(enc_imgs)
+
+X = enc_imgs
+
+##### Compute DBSCAN
+
+db = DBSCAN(eps=1.6, min_samples=3).fit(X)
+core_samples_mask = np.zeros_like(db.labels_, dtype=bool)
+core_samples_mask[db.core_sample_indices_] = True
+labels = db.labels_
+
+# Number of clusters in labels, ignoring noise if present.
+n_clusters_ = len(set(labels)) - (1 if -1 in labels else 0)
+n_noise_ = list(labels).count(-1)
+
+print('Estimated number of clusters: %d' % n_clusters_)
+print('\nEstimated number of noise points: %d' % n_noise_)
+
+##### Sortieren der Origamis nach den Clustering-Labels
+
+import copy
+
+print("l =", l)
+
+print("\nlen(O) =", len(O))
+
+print("\nO =", O)
+
+print("\nO[0] =", O[0])
+
+#print("\nlen(labels) =", len(labels))
+
+#print("\nlabels =", labels)
+
+L = labels.tolist()
+
+print("L: Liste der Cluster Labels")
+
+print("\nlen(L) =", len(L))
+
+print("\nL =", L)
+
+OCS = copy.deepcopy(O)                                                          #OCS: Liste der Origamis nach Clustern soritert
+
+print("\nOCS: Liste der Origamis nach Clustern soritert")
+
+for mm in range(0, len(O)):
+  OCS[mm].insert(0, L[mm])
+
+print("\nOCS[0] =", OCS[0])
+
+OCS.sort()
+
+for mmm in range(0, len(O)):
+  print("OCS[m] =", OCS[mmm])
+
+##### Plot result
+
+import matplotlib.pyplot as plt
+
+# Black removed and is used for noise instead.
+unique_labels = set(labels)
+colors = [plt.cm.Spectral(each)
+          for each in np.linspace(0, 1, len(unique_labels))]
+for k, col in zip(unique_labels, colors):
+    if k == -1:
+        # Black used for noise.
+        col = [0, 0, 0, 1]
+
+    class_member_mask = (labels == k)
+
+    xy = X[class_member_mask & core_samples_mask]
+    plt.plot(xy[:, 0], xy[:, 1], 'o', markerfacecolor=tuple(col),
+             markeredgecolor='k', markersize=14)
+
+    xy = X[class_member_mask & ~core_samples_mask]
+    plt.plot(xy[:, 0], xy[:, 1], 'o', markerfacecolor=tuple(col),
+             markeredgecolor='k', markersize=6)
+
+plt.title('Estimated number of clusters: %d' % n_clusters_)
+plt.show()
+
+#### **Anwenden von Agglomerative-Clustering auf die Pixeldarstellung P von O**
+
+import numpy as np
+
+from sklearn.cluster import AgglomerativeClustering
+from sklearn.preprocessing import StandardScaler
+from sklearn import metrics
+
+#Preprocessing Data
+
+arrayP = np.array(P)
+arrayP = arrayP.astype('float32') / l
+p = arrayP.reshape(len(arrayP),-1)
+
+scaler = StandardScaler()
+P_scaled = scaler.fit_transform(p)
+
+X = P_scaled
+
+#Optimizing and Evaluating the Clustering Algorithm
+
+clustering = AgglomerativeClustering().fit(X)
+clustering
+
+clustering.labels_
+
+#Plot results
+
+import numpy as np
+
+from matplotlib import pyplot as plt
+from scipy.cluster.hierarchy import dendrogram
+
+
+def plot_dendrogram(model, **kwargs):
+    # Create linkage matrix and then plot the dendrogram
+
+    # create the counts of samples under each node
+    counts = np.zeros(model.children_.shape[0])
+    n_samples = len(model.labels_)
+    for i, merge in enumerate(model.children_):
+        current_count = 0
+        for child_idx in merge:
+            if child_idx < n_samples:
+                current_count += 1  # leaf node
+            else:
+                current_count += counts[child_idx - n_samples]
+        counts[i] = current_count
+
+    linkage_matrix = np.column_stack([model.children_, model.distances_,
+                                      counts]).astype(float)
+
+    # Plot the corresponding dendrogram
+    dendrogram(linkage_matrix, **kwargs)
+
+
+# setting distance_threshold=0 ensures we compute the full tree.
+model = AgglomerativeClustering(distance_threshold=0, n_clusters=None)
+
+model = model.fit(X)
+plt.title('Hierarchical Clustering Dendrogram')
+# plot the top three levels of the dendrogram
+plot_dendrogram(model, truncate_mode='level', p=3)
+plt.xlabel("Number of points in node (or index of point if no parenthesis).")
+plt.show()
+
+### **Adding a sparsity constraint on the encoded representations**
+
+import keras
+
+from keras.layers import Input, Dense
+from keras.models import Model
+from keras import regularizers
+
+import numpy as np
+
+# this is the size of our encoded representations
+encoding_dim = 16  # 16 floats -> compression of factor 5.25, assuming the input is 84 floats         !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+
+# this is our input placeholder
+input_img = Input(shape=((l+1)*(2*l),))                                         #!!!!!!!!!!!!!!!!!!!!
+
+print("input_img shape =", input_img.shape)
+
+# "encoded" is the encoded representation of the input
+# Add a Dense layer with a L1 activity regularizer
+encoded = Dense(encoding_dim, activation='relu',
+                activity_regularizer=regularizers.l1(10e-5))(input_img)
+
+print("encoded shape =", encoded.shape)
+
+# "decoded" is the lossy reconstruction of the input
+decoded = Dense((l+1)*(2*l), activation='sigmoid')(encoded)                     #!!!!!!!!!!!!!!!!!!!!
+
+print("decoded shape =", decoded.shape)
+
+
+# this model maps an input to its reconstruction
+autoencoder = Model(input_img, decoded)
+
+###Create a separate encoder model:
+
+# this model maps an input to its encoded representation
+encoder = Model(input_img, encoded)
+
+
+###Create a seperate decoder model:
+
+# create a placeholder for an encoded (8-dimensional) input
+encoded_input = Input(shape=(encoding_dim,))
+# retrieve the last layer of the autoencoder model
+decoder_layer = autoencoder.layers[-1]
+# create the decoder model
+decoder = Model(encoded_input, decoder_layer(encoded_input))
+
+##1. Configure our model to use a per-pixel binary crossentropy loss, and the Adadelta optimizer:
+
+autoencoder.compile(optimizer='adam', loss='binary_crossentropy')               #!!!!!!!!!!!!!!!!!!!!
+
+##2. Normalize all values between 0 and 1 and flatten input Data
+
+print("P = ", P)
+
+arrayP = np.array(P)
+
+arrayP = arrayP.astype('float32') / l
+
+arrayP = arrayP.reshape((len(arrayP), np.prod(arrayP.shape[1:])))
+
+print("\narrayP = \n\n", arrayP)
+
+##3. Train autoencoder for 50 epochs:                                           #100 epochs:
+
+autoencoder.fit(arrayP, arrayP,
+                epochs=50,                                                      
+                batch_size=256,
+                shuffle=True,
+                validation_data=(arrayP, arrayP))
+
+# encode and decode some digits
+encoded_imgs = encoder.predict(arrayP)
+decoded_imgs = decoder.predict(encoded_imgs)
+
+#print("\nencoded_imgs = ", encoded_imgs)
+#print("\ntype(encoded_imgs) = ", type(encoded_imgs))
+#print("\nencoded_imgs.size = ", encoded_imgs.size)
+#print("\nencoded_imgs[0] = ", encoded_imgs[0])
+
+# use Matplotlib
+import matplotlib.pyplot as plt
+
+n = 10  # how many digits we will display
+plt.figure(figsize=(20, 4))
+for i in range(n):
+    # display original
+    ax = plt.subplot(2, n, i + 1)
+    plt.imshow(arrayP[i].reshape(l+1, 2*l))
+    plt.gray()
+    ax.get_xaxis().set_visible(False)
+    ax.get_yaxis().set_visible(False)
+
+    # display reconstruction
+    ax = plt.subplot(2, n, i + 1 + n)
+    plt.imshow(decoded_imgs[i].reshape(l+1, 2*l))
+    plt.gray()
+    ax.get_xaxis().set_visible(False)
+    ax.get_yaxis().set_visible(False)
+plt.show()
+
+### **Deep autoencoder**
+
+#### **Autoencoder**
+
+encoded shape = (None, 32)
+
+import keras
+
+from keras.layers import Input, Dense
+from keras.models import Model
+from keras import regularizers
+
+import numpy as np
+
+##### Decoder and Encoder
+
+# this is the size of our encoded representations
+encoding_dim = 16  # 16 floats -> compression of factor 5.25, assuming the input is 84 floats         !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+
+# this is our input placeholder
+input_img = Input(shape=(l+1)*(2*l),)                                           #!!!!!!!!!!!!!!!!!!!!
+
+print("input_img shape =", input_img.shape)
+
+# "encoded" is the encoded representation of the input
+encoded = Dense(128, activation='relu')(input_img)
+encoded = Dense(64, activation='relu')(encoded)
+encoded = Dense(32, activation='relu')(encoded)
+
+print("encoded shape =", encoded.shape)
+
+# "decoded" is the lossy reconstruction of the input
+decoded = Dense(64, activation='relu')(encoded)
+decoded = Dense(128, activation='relu')(decoded)
+decoded = Dense((l+1)*(2*l), activation='sigmoid')(decoded)
+
+print("decoded shape =", decoded.shape)
+
+
+# this model maps an input to its reconstruction
+autoencoder = Model(input_img, decoded)
+
+###Create a separate encoder model:
+
+# this model maps an input to its encoded representation
+encoder = Model(input_img, encoded)
+
+##### Train autoencoder to reconstruct Input
+
+##1. Configure our model to use a per-pixel binary crossentropy loss, and the Adadelta optimizer:
+
+autoencoder.compile(optimizer='adam', loss='binary_crossentropy')               #!!!!!!!!!!!!!!!!!!!!
+
+##2. Normalize all values between 0 and 1 and flatten input Data
+
+print("P = ", P)
+
+arrayP = np.array(P)
+
+arrayP = arrayP.astype('float32') / l
+
+arrayP = arrayP.reshape((len(arrayP), np.prod(arrayP.shape[1:])))
+
+print("\narrayP = \n\n", arrayP)
+
+##3. Train autoencoder for 50 epochs:                                           #100 epochs:
+
+autoencoder.fit(arrayP, arrayP,
+                epochs=50,                                                      
+                batch_size=256,
+                shuffle=True,
+                validation_data=(arrayP, arrayP))
+
+#####Visualize the reconstructed Inputs and the encoded representations with Matplotlib
+
+# encode and decode some digits
+encoded_imgs = encoder.predict(arrayP)
+decoded_imgs = autoencoder.predict(arrayP)
+
+#print("\nencoded_imgs = ", encoded_imgs)
+#print("\ntype(encoded_imgs) = ", type(encoded_imgs))
+#print("\nencoded_imgs.size = ", encoded_imgs.size)
+#print("\nencoded_imgs[0] = ", encoded_imgs[0])
+
+# use Matplotlib
+import matplotlib.pyplot as plt
+
+n = 10  # how many digits we will display
+plt.figure(figsize=(20, 4))
+for i in range(n):
+    # display original
+    ax = plt.subplot(2, n, i + 1)
+    plt.imshow(arrayP[i].reshape(l+1, 2*l))
+    plt.gray()
+    ax.get_xaxis().set_visible(False)
+    ax.get_yaxis().set_visible(False)
+
+    # display reconstruction
+    ax = plt.subplot(2, n, i + 1 + n)
+    plt.imshow(decoded_imgs[i].reshape(l+1, 2*l))
+    plt.gray()
+    ax.get_xaxis().set_visible(False)
+    ax.get_yaxis().set_visible(False)
+plt.show()
+
+#### **Anwenden von DBSCAN-Clustering auf die encodierten Daten**
+
+import numpy as np
+
+from sklearn.cluster import DBSCAN
+from sklearn.preprocessing import StandardScaler
+from sklearn import metrics
+
+##### Preprocessing Data
+
+enc_imgs = encoded_imgs.reshape(len(encoded_imgs),-1)
+
+scaler = StandardScaler()
+enc_imgs = scaler.fit_transform(enc_imgs)
+
+X = enc_imgs
+
+##### Compute DBSCAN
+
+db = DBSCAN(eps=1.6, min_samples=3).fit(X)
+core_samples_mask = np.zeros_like(db.labels_, dtype=bool)
+core_samples_mask[db.core_sample_indices_] = True
+labels = db.labels_
+
+# Number of clusters in labels, ignoring noise if present.
+n_clusters_ = len(set(labels)) - (1 if -1 in labels else 0)
+n_noise_ = list(labels).count(-1)
+
+print('Estimated number of clusters: %d' % n_clusters_)
+print('\nEstimated number of noise points: %d' % n_noise_)
+
+#print("\nlen(labels) =", len(labels))
+#print("\nlabels =", labels)
+
+##### Sortieren der Origamis nach den Clustering-Labels
+
+import copy
+
+print("l =", l)
+
+print("\nlen(O) =", len(O))
+
+print("\nO =", O)
+
+print("\nO[0] =", O[0])
+
+#print("\nlen(labels) =", len(labels))
+
+#print("\nlabels =", labels)
+
+L = labels.tolist()
+
+print("L: Liste der Cluster Labels")
+
+print("\nlen(L) =", len(L))
+
+print("\nL =", L)
+
+OCS = copy.deepcopy(O)                                                          #OCS: Liste der Origamis nach Clustern soritert
+
+print("\nOCS: Liste der Origamis nach Clustern soritert")
+
+for mm in range(0, len(O)):
+  OCS[mm].insert(0, L[mm])
+
+print("\nOCS[0] =", OCS[0])
+
+OCS.sort()
+
+for mmm in range(0, len(O)):
+  print("OCS[m] =", OCS[mmm])
+
+##### Plot result
+
+import matplotlib.pyplot as plt
+
+# Black removed and is used for noise instead.
+unique_labels = set(labels)
+colors = [plt.cm.Spectral(each)
+          for each in np.linspace(0, 1, len(unique_labels))]
+for k, col in zip(unique_labels, colors):
+    if k == -1:
+        # Black used for noise.
+        col = [0, 0, 0, 1]
+
+    class_member_mask = (labels == k)
+
+    xy = X[class_member_mask & core_samples_mask]
+    plt.plot(xy[:, 0], xy[:, 1], 'o', markerfacecolor=tuple(col),
+             markeredgecolor='k', markersize=14)
+
+    xy = X[class_member_mask & ~core_samples_mask]
+    plt.plot(xy[:, 0], xy[:, 1], 'o', markerfacecolor=tuple(col),
+             markeredgecolor='k', markersize=6)
+
+plt.title('Estimated number of clusters: %d' % n_clusters_)
+plt.show()
+
+#### **Autoencoder**
+
+encoded shape = (None, 16)
+
+import keras
+
+from keras.layers import Input, Dense
+from keras.models import Model
+from keras import regularizers
+
+import numpy as np
+
+##### Decoder and Encoder
+
+# this is the size of our encoded representations
+encoding_dim = 16  # 16 floats -> compression of factor 5.25, assuming the input is 84 floats         !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+
+# this is our input placeholder
+input_img = Input(shape=(l+1)*(2*l),)                                           #!!!!!!!!!!!!!!!!!!!!
+
+print("input_img shape =", input_img.shape)
+
+# "encoded" is the encoded representation of the input
+encoded = Dense(128, activation='relu')(input_img)
+encoded = Dense(64, activation='relu')(encoded)
+encoded = Dense(32, activation='relu')(encoded)
+encoded = Dense(16 , activation='relu')(encoded)
+#encoded = Dense(8  , activation='relu')(encoded)
+
+print("encoded shape =", encoded.shape)
+
+# "decoded" is the lossy reconstruction of the input
+#decoded = Dense(16 , activation='relu')(encoded)
+decoded = Dense(32 , activation='relu')(encoded)
+decoded = Dense(64, activation='relu')(encoded)
+decoded = Dense(128, activation='relu')(decoded)
+decoded = Dense((l+1)*(2*l), activation='sigmoid')(decoded)
+
+print("decoded shape =", decoded.shape)
+
+
+# this model maps an input to its reconstruction
+autoencoder = Model(input_img, decoded)
+
+###Create a separate encoder model:
+
+# this model maps an input to its encoded representation
+encoder = Model(input_img, encoded)
+
+##### Train autoencoder to reconstruct Input
+
+##1. Configure our model to use a per-pixel binary crossentropy loss, and the Adadelta optimizer:
+
+autoencoder.compile(optimizer='adam', loss='binary_crossentropy')               #!!!!!!!!!!!!!!!!!!!!
+
+##2. Normalize all values between 0 and 1 and flatten input Data
+
+print("P = ", P)
+
+arrayP = np.array(P)
+
+arrayP = arrayP.astype('float32') / l
+
+arrayP = arrayP.reshape((len(arrayP), np.prod(arrayP.shape[1:])))
+
+print("\narrayP = \n\n", arrayP)
+
+##3. Train autoencoder for 50 epochs:                                           #100 epochs:
+
+autoencoder.fit(arrayP, arrayP,
+                epochs=50,                                                      
+                batch_size=256,
+                shuffle=True,
+                validation_data=(arrayP, arrayP))
+
+#####Visualize the reconstructed Inputs and the encoded representations with Matplotlib
+
+# encode and decode some digits
+encoded_imgs = encoder.predict(arrayP)
+decoded_imgs = autoencoder.predict(arrayP)
+
+#print("\nencoded_imgs = ", encoded_imgs)
+#print("\ntype(encoded_imgs) = ", type(encoded_imgs))
+#print("\nencoded_imgs.size = ", encoded_imgs.size)
+#print("\nencoded_imgs[0] = ", encoded_imgs[0])
+
+# use Matplotlib
+import matplotlib.pyplot as plt
+
+n = 10  # how many digits we will display
+plt.figure(figsize=(20, 4))
+for i in range(n):
+    # display original
+    ax = plt.subplot(2, n, i + 1)
+    plt.imshow(arrayP[i].reshape(l+1, 2*l))
+    plt.gray()
+    ax.get_xaxis().set_visible(False)
+    ax.get_yaxis().set_visible(False)
+
+    # display reconstruction
+    ax = plt.subplot(2, n, i + 1 + n)
+    plt.imshow(decoded_imgs[i].reshape(l+1, 2*l))
+    plt.gray()
+    ax.get_xaxis().set_visible(False)
+    ax.get_yaxis().set_visible(False)
+plt.show()
+
+####**Anwendung von K-Means Clustering auf die encodierten Daten**
+
+https://realpython.com/k-means-clustering-python/
+
+import copy
+import matplotlib.pyplot as plt
+from sklearn.cluster import KMeans
+from sklearn.metrics import silhouette_score
+from sklearn.preprocessing import StandardScaler
+
+X = copy.deepcopy(encoded_imgs)
+
+X[:5]
+
+Transforming numerical values to use the same scale
+
+scaler = StandardScaler()
+scaled_X = scaler.fit_transform(X)
+
+scaled_X[:5]
+
+Instanziiere die KMeans-Klasse mit folgenden Argumenten
+
+kmeans = KMeans(
+     init="random",
+     n_clusters=10,
+     n_init=10,
+     max_iter=300,
+     random_state=42
+ )
+
+Durchführen des k-Means-Algorithmus
+
+(Zehn Durchläufe mit maximal 300 Iterationen pro Durchlauf)
+
+kmeans.fit(scaled_X)
+
+# The lowest SSE (sum of the squared error) value
+kmeans.inertia_
+
+# Final locations of the centroid
+kmeans.cluster_centers_
+
+# The number of iterations required to converge
+kmeans.n_iter_
+
+kmeans.labels_[:5]
+
+print("len(kmeans.labels_[:]) =", len(kmeans.labels_[:]))
+
+##### Sortieren der Origamis nach den Clustering-Labels
+
+import copy
+
+print("l =", l)
+
+print("\nlen(O) =", len(O))
+
+print("\nO =", O)
+
+print("\nO[0] =", O[0])
+
+#print("len(kmeans.labels_[:]) =", len(kmeans.labels_[:]))
+
+L = kmeans.labels_[:].tolist()
+
+print("L: Liste der Cluster Labels")
+
+print("\nlen(L) =", len(L))
+
+print("\nL =", L)
+
+OCS = copy.deepcopy(O)                                                          #OCS: Liste der Origamis nach Clustern soritert
+
+print("\nOCS: Liste der Origamis nach Clustern soritert")
+
+for mm in range(0, len(O)):
+  OCS[mm].insert(0, L[mm])
+
+print("\nOCS[0] =", OCS[0])
+
+OCS.sort()
+
+for mmm in range(0, len(O)):
+  print("OCS[m] =", OCS[mmm])
+
+#####**Choosing the Appropriate Number of Clusters**
+
+There are two methods that are commonly used to evaluate the appropriate number of clusters
+
+######**Elbow method**
+
+The elbow method consists of plotting the SSE as a function of the number of clusters, and picking the elbow of the curve as the number of clusters to use
+
+kmeans_kwargs = {
+     "init": "random",
+     "n_init": 10,
+     "max_iter": 300,
+     "random_state": 42,
+ }
+
+# A list holds the SSE values for each k
+sse = []
+for k in range(1, 11):
+     kmeans = KMeans(n_clusters=k, **kmeans_kwargs)
+     kmeans.fit(scaled_X)
+     sse.append(kmeans.inertia_)
+
+plt.style.use("fivethirtyeight")
+plt.plot(range(1, 11), sse)
+plt.xticks(range(1, 11))
+plt.xlabel("Number of Clusters")
+plt.ylabel("SSE")
+plt.show()
+
+ SSE: Sum of the squared error
+
+
+
+
+######**Silhouette coefficient**
+
+Silhouette coefficient quantifies how well a data point fits into its assigned cluster based on two factors:
+
+
+1.   How close the data point is to other points in   the cluster
+2.   How far away the data point is from points in other clusters
+
+
+
+
+# A list holds the silhouette coefficients for each k
+silhouette_coefficients = []
+
+# Notice you start at 2 clusters for silhouette coefficient
+for k in range(2, 11):
+     kmeans = KMeans(n_clusters=k, **kmeans_kwargs)
+     kmeans.fit(scaled_X)
+     score = silhouette_score(scaled_X, kmeans.labels_)
+     silhouette_coefficients.append(score)
+
+plt.style.use("fivethirtyeight")
+plt.plot(range(2, 11), silhouette_coefficients)
+plt.xticks(range(2, 11))
+plt.xlabel("Number of Clusters")
+plt.ylabel("Silhouette Coefficient")
+plt.show()
+
+### **Convolutional autoencoder**
+
+#### **Autoencoder**
+
+from keras.layers import Input, Dense
+from keras.models import Model
+
+import numpy as np
+
+from keras.layers import Input, Dense, Conv2D, MaxPooling2D, UpSampling2D
+from keras.models import Model
+from keras import backend as K
+
+#####Convolutional neural networks as encoder and as decode:
+
+# this is our input placeholder
+input_img = Input(shape=(l+1, (2*l), 1))
+
+print("input_img shape =", input_img.shape)
+
+# "encoded" is the encoded representation of the input
+
+x = Conv2D(16, (3, 3), activation='relu', padding='same')(input_img)
+x = MaxPooling2D((2, 2), padding='same')(x)                                     #!!!!!!!!!!!
+x = Conv2D(8, (3, 3), activation='relu', padding='same')(x)
+encoded = MaxPooling2D((2, 2), padding='same')(x)
+
+print("encoded shape =", encoded.shape)
+
+# "decoded" is the lossy reconstruction of the input
+
+x = UpSampling2D((2,2))(encoded)
+x = Conv2D(8, (3, 3), activation='relu', padding='same')(x)
+x = UpSampling2D((2, 2))(x)                                                     #!!!!!!!!!!!                                                    
+x = Conv2D(16, (2, 1), activation='relu')(x)                                                                                                                   
+decoded = Conv2D(1, (3, 3), activation='sigmoid', padding='same')(x)
+
+print("decoded shape =", decoded.shape)
+
+# this model maps an input to its reconstruction
+autoencoder = Model(input_img, decoded)
+
+###Create a separate encoder model:
+
+# this model maps an input to its encoded representation
+encoder = Model(input_img, encoded)
+
+#####Train our autoencoder to reconstruct Input:
+
+##1. Configure our model to use a per-pixel binary crossentropy loss, and the Adadelta optimizer:
+
+autoencoder.compile(optimizer='adam', loss='binary_crossentropy')               #!!!!!!!!!!!!!!!!!!!!
+
+##2. Normalize all values between 0 and 1 and flatten input Data
+
+print("P = ", P)
+
+arrayP = np.array(P)
+
+arrayP = arrayP.astype('float32') / l
+
+arrayP = arrayP.reshape((len(arrayP), l+1, 2*l, 1))
+# adapt this if using `channels_first` image data format
+
+#print("\narrayP = \n\n", arrayP)
+
+#print("\n")
+
+##3. Train autoencoder for 50 epochs:                                           #100 epochs:
+
+autoencoder.fit(arrayP, arrayP,
+                epochs=50,                                                      
+                batch_size=256,
+                shuffle=True,
+                validation_data=(arrayP, arrayP))  
+
+#####Visualize the reconstructed inputs and the encoded representations with Matplotlib:
+
+# encode and decode some digits
+encoded_imgs = encoder.predict(arrayP)
+decoded_imgs = autoencoder.predict(arrayP)
+
+# use Matplotlib
+import matplotlib.pyplot as plt
+
+n = 10  # how many digits we will display
+plt.figure(figsize=(20, 4))
+for i in range(n):
+    # display original
+    ax = plt.subplot(2, n, i + 1)
+    plt.imshow(arrayP[i].reshape(l+1, 2*l))
+    plt.gray()
+    ax.get_xaxis().set_visible(False)
+    ax.get_yaxis().set_visible(False)
+
+    # display reconstruction
+    ax = plt.subplot(2, n, i + 1 + n)
+    plt.imshow(decoded_imgs[i].reshape(l+1, 2*l))
+    plt.gray()
+    ax.get_xaxis().set_visible(False)
+    ax.get_yaxis().set_visible(False)
+plt.show()
+
+#### **Anwenden von DBSCAN-Clustering auf die encodierten Daten**
+
+import numpy as np
+
+from sklearn.cluster import DBSCAN
+from sklearn.preprocessing import StandardScaler
+from sklearn import metrics
+
+##### Preprocessing Data
+
+enc_imgs = encoded_imgs.reshape(len(encoded_imgs),-1)
+
+scaler = StandardScaler()
+enc_imgs = scaler.fit_transform(enc_imgs)
+
+X = enc_imgs
+
+##### Compute DBSCAN
+
+db = DBSCAN(eps=1.6, min_samples=3).fit(X)
+core_samples_mask = np.zeros_like(db.labels_, dtype=bool)
+core_samples_mask[db.core_sample_indices_] = True
+labels = db.labels_
+
+# Number of clusters in labels, ignoring noise if present.
+n_clusters_ = len(set(labels)) - (1 if -1 in labels else 0)
+n_noise_ = list(labels).count(-1)
+
+print('Estimated number of clusters: %d' % n_clusters_)
+print('\nEstimated number of noise points: %d' % n_noise_)
+
+##### Sortieren der Origamis nach den Clustering-Labels
+
+import copy
+
+print("l =", l)
+
+print("\nlen(O) =", len(O))
+
+print("\nO =", O)
+
+print("\nO[0] =", O[0])
+
+#print("\nlen(labels) =", len(labels))
+
+#print("\nlabels =", labels)
+
+L = labels.tolist()
+
+print("L: Liste der Cluster Labels")
+
+print("\nlen(L) =", len(L))
+
+print("\nL =", L)
+
+OCS = copy.deepcopy(O)                                                          #OCS: Liste der Origamis nach Clustern soritert
+
+print("\nOCS: Liste der Origamis nach Clustern soritert")
+
+for mm in range(0, len(O)):
+  OCS[mm].insert(0, L[mm])
+
+print("\nOCS[0] =", OCS[0])
+
+OCS.sort()
+
+for mmm in range(0, len(O)):
+  print("OCS[m] =", OCS[mmm])
+
+##### Plot result
+
+import matplotlib.pyplot as plt
+
+# Black removed and is used for noise instead.
+unique_labels = set(labels)
+colors = [plt.cm.Spectral(each)
+          for each in np.linspace(0, 1, len(unique_labels))]
+for k, col in zip(unique_labels, colors):
+    if k == -1:
+        # Black used for noise.
+        col = [0, 0, 0, 1]
+
+    class_member_mask = (labels == k)
+
+    xy = X[class_member_mask & core_samples_mask]
+    plt.plot(xy[:, 0], xy[:, 1], 'o', markerfacecolor=tuple(col),
+             markeredgecolor='k', markersize=14)
+
+    xy = X[class_member_mask & ~core_samples_mask]
+    plt.plot(xy[:, 0], xy[:, 1], 'o', markerfacecolor=tuple(col),
+             markeredgecolor='k', markersize=6)
+
+plt.title('Estimated number of clusters: %d' % n_clusters_)
+plt.show()
+
+#**Weitere Clustering-Verfahren:**
+
+
+  - K-Means 
+    (https://medium.com/@sangramsing/k-means-clustering-for-imagery-analysis-881ced89053d)
+  - Spectral Clustering
